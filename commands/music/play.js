@@ -1,57 +1,61 @@
-const { QueryType, useMainPlayer, useQueue } = require('discord-player');
-const { ApplicationCommandOptionType, EmbedBuilder } = require('discord.js');
-const { Translate } = require('../../process_tools');
+const { SlashCommandBuilder } = require('discord.js');
+const { QueryType } = require('discord-player');
 
 module.exports = {
-    name: 'play',
-    description: 'Play a song!',
-    voiceChannel: true,
-    options: [
-        {
-            name: 'song',
-            description: 'The song you want to play',
-            type: ApplicationCommandOptionType.String,
-            required: true,
-        }
-    ],
+    data: new SlashCommandBuilder()
+        .setName('play')
+        .setDescription('Joue une musique depuis YouTube')
+        .addStringOption(option =>
+            option.setName('query')
+                .setDescription('Lien ou mot-clé de la musique')
+                .setRequired(true)
+        ),
 
-    async execute({ inter, client }) {
-        const player = useMainPlayer();
-        const song = inter.options.getString('song');
-        const res = await player.search(song, {
-            requestedBy: inter.member,
-            searchEngine: QueryType.AUTO
+    async execute(interaction) {
+        const query = interaction.options.getString('query');
+        const member = interaction.member;
+
+        if (!member.voice.channel) {
+            return interaction.reply({ content: '🔇 Tu dois être dans un salon vocal !', ephemeral: true });
+        }
+
+        const channel = member.voice.channel;
+        const client = interaction.client;
+
+        // Crée ou récupère la queue
+        const queue = client.player.nodes.create(interaction.guild, {
+            metadata: interaction.channel,
+            selfDeaf: true,
+            volume: 80,
+            leaveOnEnd: false,
+            leaveOnEmpty: false,
         });
 
-        const defaultEmbed = new EmbedBuilder().setColor('#2f3136');
+        // Joindre le salon vocal
+        if (!queue.connection) await queue.connect(channel);
 
-        if (!res?.tracks.length) {
-            defaultEmbed.setAuthor({ name: await Translate(`No results found... try again ? <❌>`) });
-            return inter.editReply({ embeds: [defaultEmbed] });
-        }
+        await interaction.deferReply();
 
         try {
-            const { track } = await player.play(inter.member.voice.channel, song, {
-                nodeOptions: {
-                    metadata: {
-                        channel: inter.channel
-                    },
-                    volume: client.config.opt.volume,
-                    leaveOnEmpty: false, // reste même s'il est seul
-                    leaveOnEnd: false    // ne quitte pas à la fin
-                }
+            // Recherche avec play-dl
+            const result = await client.player.search(query, {
+                requestedBy: interaction.user,
+                searchEngine: QueryType.AUTO,
             });
 
-            // ✅ boucle auto activée (1 = répéter la piste)
-            const queue = useQueue(inter.guildId);
-            if (queue) queue.setRepeatMode(1);
+            if (!result || !result.tracks.length) {
+                return interaction.editReply({ content: '❌ Aucun résultat trouvé. Réessaye avec un autre mot-clé ou lien.' });
+            }
 
-            defaultEmbed.setAuthor({ name: await Translate(`Loading <${track.title}> to the queue... <✅>`) });
-            await inter.editReply({ embeds: [defaultEmbed] });
+            const track = result.tracks[0];
+            queue.addTrack(track);
+
+            if (!queue.isPlaying()) await queue.node.play();
+
+            return interaction.editReply(`🎶 Ajouté à la file : **${track.title}**`);
         } catch (error) {
-            console.log(`Play error: ${error}`);
-            defaultEmbed.setAuthor({ name: await Translate(`I can't join the voice channel... try again ? <❌>`) });
-            return inter.editReply({ embeds: [defaultEmbed] });
+            console.error('Erreur dans la commande /play :', error);
+            return interaction.editReply('❌ Une erreur est survenue pendant la lecture.');
         }
-    }
+    },
 };
