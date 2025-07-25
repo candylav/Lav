@@ -42,20 +42,21 @@ module.exports = {
       });
 
       if (!result || !result.tracks.length) {
-        return interaction.editReply({
+        await interaction.editReply({
           content: "😭 Aucun résultat trouvé... Essaie autre chose ! 🍡",
         });
+        return;
       }
 
       queue.addTrack(result.tracks[0]);
       if (!queue.isPlaying()) await queue.node.play();
 
-      return interaction.editReply({
-        content: `💿 **${result.tracks[0].title}** a été ajoutée à la file d'attente ! 💙🧁`,
+      await interaction.editReply({
+        content: `🍭💖 **${result.tracks[0].title}** a été ajoutée à ta playlist toute douce ! 💜🧁💙\nPrépare tes oreilles, la magie commence maintenant ✨🎀🍡`,
       });
     } catch (error) {
       console.error("❌ Erreur de lecture :", error);
-      return interaction.editReply({
+      await interaction.editReply({
         content: "❌ Une erreur est survenue lors de la lecture... 😢",
       });
     }
