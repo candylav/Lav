@@ -44,4 +44,20 @@ module.exports = async (client, inter) => {
             await command.execute(inter);
         } catch (err) {
             console.error(err);
-            errorEmbed.setDescription('❌ Une erreur est survenue pendant l
+            errorEmbed.setDescription('❌ Une erreur est survenue pendant l\'exécution de la commande.');
+            await inter.editReply({ embeds: [errorEmbed], ephemeral: true });
+        }
+    }
+
+    else if (inter.isMessageComponent()) {
+        const customId = inter.customId;
+        if (!customId) return;
+
+        const queue = useQueue(inter.guild);
+        const path = `../../buttons/${customId}.js`;
+
+        delete require.cache[require.resolve(path)];
+        const button = require(path);
+        if (button) return button({ client, inter, customId, queue });
+    }
+};
