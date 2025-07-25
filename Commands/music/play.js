@@ -15,14 +15,16 @@ module.exports = {
         const query = interaction.options.getString('query');
         const member = interaction.member;
 
+        // ✅ Vérifie si l'utilisateur est en vocal AVANT de defer
         if (!member.voice.channel) {
             return interaction.reply({
                 content: '🔇 Tu dois être dans un salon vocal !',
-                flags: 64 // Rend le message éphémère
+                ephemeral: true, // remplace "flags: 64"
             });
         }
 
-        await interaction.deferReply(); // ✅ On diffère seulement si on n’a pas répondu
+        // ✅ Seulement maintenant on peut defer la réponse
+        await interaction.deferReply();
 
         const queue = interaction.client.player.nodes.create(interaction.guild, {
             metadata: interaction.channel,
@@ -35,6 +37,7 @@ module.exports = {
         try {
             if (!queue.connection) await queue.connect(member.voice.channel);
         } catch (err) {
+            console.error('Erreur connexion vocal :', err);
             return interaction.editReply({ content: '❌ Impossible de rejoindre le salon vocal.' });
         }
 
