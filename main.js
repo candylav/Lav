@@ -2,9 +2,9 @@ require('dotenv').config();
 
 const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
 const { Player } = require('discord-player');
-const playdl = require('play-dl');
+const { YouTubeExtractor } = require('@discord-player/youtubei');
 
-// 🔧 Crée le client Discord
+// 💖 Crée le client Discord
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -16,33 +16,31 @@ const client = new Client({
     partials: [Partials.Channel]
 });
 
-// 🔧 Charge la config
+// 📦 Charge la config
 client.config = require('./config');
 
-// 🛠️ Prépare la collection de commandes (indispensable)
+// 🍡 Prépare la collection de commandes
 client.commands = new Collection();
 
-// 🔊 Initialise le lecteur audio
+// 🎧 Initialise le lecteur audio
 const player = new Player(client, client.config.opt.discordPlayer);
 
-// 🎵 Charge et connecte les extracteurs (play-dl)
-player.extractors.loadDefault().then(() => {
-    player.extractors.register(playdl, {});
-    console.log("✅ Extracteur play-dl chargé avec succès !");
-});
+// 🧁 Charge et connecte l’extracteur YouTube officiel
+player.extractors.register(YouTubeExtractor, {});
+console.log("🩷 Extracteur `youtubei` chargé avec succès !");
 
-// 🔁 Attache player et client globalement
+// 🎀 Attache player et client globalement
 client.player = player;
 global.client = client;
 
-// ✅ Affichage du token pour debug Railway
+// 🌈 Affichage du token pour debug Railway
 console.clear();
 console.log("✅ TOKEN chargé :", client.config.app.token ? "[TROUVÉ]" : "[MANQUANT]");
 
-// 🧠 Charge tous les handlers
+// 🍬 Charge tous les handlers
 require('./loader');
 
-// ▶️ Connexion du bot à Discord
+// 🚀 Connexion du bot à Discord
 client.login(client.config.app.token).catch(async (e) => {
     if (e.message === 'An invalid token was provided.') {
         console.error('\n❌ Token invalide ❌\n➡️ Vérifie `config.js` ou tes variables Railway.');
