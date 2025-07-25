@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
 const { Player } = require('discord-player');
 const playdl = require('play-dl');
 
@@ -13,37 +13,39 @@ const client = new Client({
         GatewayIntentBits.GuildVoiceStates,
         GatewayIntentBits.MessageContent,
     ],
+    partials: [Partials.Channel]
 });
 
 // 🔧 Charge la config
 client.config = require('./config');
 
-// 🔧 Initialise le lecteur audio
+// 🛠️ Prépare la collection de commandes (indispensable)
+client.commands = new Collection();
+
+// 🔊 Initialise le lecteur audio
 const player = new Player(client, client.config.opt.discordPlayer);
 
-// 🔧 Charge et connecte les extracteurs
+// 🎵 Charge et connecte les extracteurs (play-dl)
 player.extractors.loadDefault().then(() => {
     player.extractors.register(playdl, {});
     console.log("✅ Extracteur play-dl chargé avec succès !");
 });
 
-// 🔁 Attache player au client
+// 🔁 Attache player et client globalement
 client.player = player;
-
-// 🔁 Rends le client global si tu utilises `global.client` dans d’autres fichiers
 global.client = client;
 
-// 🧠 Debug : affichage token (pour Railway)
+// ✅ Affichage du token pour debug Railway
 console.clear();
 console.log("✅ TOKEN chargé :", client.config.app.token ? "[TROUVÉ]" : "[MANQUANT]");
 
-// 🔌 Charge les handlers
+// 🧠 Charge tous les handlers
 require('./loader');
 
-// ▶️ Connexion du bot
+// ▶️ Connexion du bot à Discord
 client.login(client.config.app.token).catch(async (e) => {
     if (e.message === 'An invalid token was provided.') {
-        require('./process_tools').throwConfigError('app', 'token', '\n\t   ❌ Token invalide ❌\n\tModifie le token dans `config.js` ou dans Railway.\n');
+        console.error('\n❌ Token invalide ❌\n➡️ Vérifie `config.js` ou tes variables Railway.');
     } else {
         console.error('❌ Erreur de connexion au bot ❌\n', e);
     }

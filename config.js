@@ -2,11 +2,16 @@ require('dotenv').config();
 
 module.exports = {
     app: {
-        token: process.env.TOKEN, // ✅ Token du bot
-        clientId: process.env.CLIENT_ID, // ✅ ID de l'application Discord
+        token: process.env.TOKEN,
+        clientId: process.env.CLIENT_ID,
         playing: 'i will never give up in you❤️',
-        global: true,
-        guild: "", // Optionnel : mets l’ID de ton serveur ici si tu veux tester localement
+        global: false, // ❗️Désactivé pour enregistrer sur des serveurs spécifiques
+        guilds: [ // ✅ Liste de tes serveurs
+            "1398318999338750175",
+            "1397746309296820235",
+            "1276300982409494659",
+            "1259695245784911902"
+        ],
         extraMessages: false,
         loopMessage: false,
         lang: 'en',

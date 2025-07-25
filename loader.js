@@ -1,75 +1,74 @@
 const { readdirSync } = require("fs");
 const { Collection } = require("discord.js");
 const { useMainPlayer } = require("discord-player");
-
-client.commands = new Collection();
-const commandsArray = [];
-const player = useMainPlayer();
-
 const { Translate, GetTranslationModule } = require("./process_tools");
 
-const discordEvents = readdirSync("./events/Discord/").filter((file) =>
-  file.endsWith(".js")
-);
-const playerEvents = readdirSync("./events/Player/").filter((file) =>
-  file.endsWith(".js")
-);
+const player = useMainPlayer();
+const commandsArray = [];
 
+client.commands = new Collection();
+
+// 🔁 Charge les modules de traduction
 GetTranslationModule().then(() => {
-  console.log("| Translation Module Loaded |");
+  console.log("| 🌍 Translation Module Loaded |");
 
+  // 📦 Événements Discord
+  const discordEvents = readdirSync("./events/Discord").filter(file => file.endsWith(".js"));
   for (const file of discordEvents) {
-    const DiscordEvent = require(`./events/Discord/${file}`);
-    const txtEvent = `< -> > [Loaded Discord Event] <${file.split(".")[0]}>`;
-    parseLog(txtEvent);
-    client.on(file.split(".")[0], DiscordEvent.bind(null, client));
-    delete require.cache[require.resolve(`./events/Discord/${file}`)];
+    const event = require(`./events/Discord/${file}`);
+    const eventName = file.split(".")[0];
+    client.on(eventName, event.bind(null, client));
+    parseLog(`< -> > [✅ Event Discord] <${eventName}>`);
   }
 
+  // 🎵 Événements Player
+  const playerEvents = readdirSync("./events/Player").filter(file => file.endsWith(".js"));
   for (const file of playerEvents) {
-    const PlayerEvent = require(`./events/Player/${file}`);
-    const txtEvent = `< -> > [Loaded Player Event] <${file.split(".")[0]}>`;
-    parseLog(txtEvent);
-    player.events.on(file.split(".")[0], PlayerEvent.bind(null));
-    delete require.cache[require.resolve(`./events/Player/${file}`)];
+    const event = require(`./events/Player/${file}`);
+    const eventName = file.split(".")[0];
+    player.events.on(eventName, event.bind(null));
+    parseLog(`< -> > [🎧 Event Player] <${eventName}>`);
   }
 
-  readdirSync("./commands/").forEach((dirs) => {
-    const commands = readdirSync(`./commands/${dirs}`).filter((files) =>
-      files.endsWith(".js")
-    );
+  // 📂 Commandes (multi-dossiers)
+  const folders = readdirSync("./Commands");
+  for (const folder of folders) {
+    const files = readdirSync(`./Commands/${folder}`).filter(file => file.endsWith(".js"));
 
-    for (const file of commands) {
+    for (const file of files) {
       try {
-        const command = require(`./commands/${dirs}/${file}`);
-        if (command.name && command.description) {
-          commandsArray.push(command);
-          const txtEvent = `< -> > [Loaded Command] <${command.name.toLowerCase()}>`;
-          parseLog(txtEvent);
-          client.commands.set(command.name.toLowerCase(), command);
+        const command = require(`./Commands/${folder}/${file}`);
+        if (command?.data && command?.execute) {
+          commandsArray.push(command.data.toJSON());
+          client.commands.set(command.data.name, command);
+          parseLog(`< -> > [✅ Slash Command] </${command.data.name}>`);
         } else {
-          const name = command?.name ? command.name.toLowerCase() : file;
-          const txtEvent = `< -> > [Failed Command] <${name}>`;
-          parseLog(txtEvent);
-          console.warn(`⚠️ La commande dans ./commands/${dirs}/${file} est invalide ou incomplète.`);
+          parseLog(`< -> > [⚠️ Ignored Command] <${file}>`);
         }
-        delete require.cache[require.resolve(`./commands/${dirs}/${file}`)];
       } catch (err) {
-        console.error(`❌ Erreur en chargeant ./commands/${dirs}/${file} :`, err);
+        console.error(`❌ Erreur dans ./Commands/${folder}/${file}`, err);
       }
+    }
+  }
+
+  // 🚀 Déploiement automatique (dev ou global)
+  client.on("ready", async () => {
+    try {
+      if (client.config.app.global) {
+        await client.application.commands.set(commandsArray);
+        parseLog("🌍 Commandes globales déployées !");
+      } else {
+        const guild = client.guilds.cache.get(client.config.app.guild);
+        if (!guild) return console.error("❌ ID du serveur (guild) invalide ou bot non présent.");
+        await guild.commands.set(commandsArray);
+        parseLog("🛠️ Commandes déployées sur le serveur de test.");
+      }
+    } catch (error) {
+      console.error("❌ Erreur lors du set(commandsArray) :", error);
     }
   });
 
-  client.on("ready", (client) => {
-    if (client.config.app.global)
-      client.application.commands.set(commandsArray);
-    else
-      client.guilds.cache
-        .get(client.config.app.guild)
-        .commands.set(commandsArray);
-  });
-
-  async function parseLog(txtEvent) {
-    console.log(await Translate(txtEvent, null));
+  async function parseLog(msg) {
+    console.log(await Translate(msg, null));
   }
 });
