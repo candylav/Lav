@@ -1,48 +1,41 @@
+const { Client, GatewayIntentBits, Collection } = require('discord.js');
+const { Player } = require('discord-player');
+const { loadCommands } = require('./handlers/slash_handler');
+const { loadEvents } = require('./handlers/event_handler');
+const { loadButtons } = require('./handlers/button_handler');
+const { YouTubeExtractor } = require('@discord-player/extractor');
+const { resolve } = require('path');
 require('dotenv').config();
 
-const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
-const { Player } = require('discord-player');
-const { YouTubeExtractor } = require('@discord-player/extractor');
-
-// 🌸 Crée le client Discord
 const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.GuildVoiceStates,
-        GatewayIntentBits.MessageContent,
-    ],
-    partials: [Partials.Channel]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildVoiceStates,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
 });
 
-// 🌸 Charge la config
-client.config = require('./config');
-
-// 🌸 Prépare la collection de commandes
 client.commands = new Collection();
 
-// 🎵 Initialise le player
-const player = new Player(client, client.config.opt.discordPlayer);
+// Chargement du player
+const player = new Player(client, {
+  ytdlOptions: {
+    filter: 'audioonly',
+    highWaterMark: 1 << 25,
+  },
+});
+player.extractors.register(YouTubeExtractor);
 
-// 🎀 Charge l'extracteur YouTube pastel
-player.extractors.register(YouTubeExtractor, {});
+// Load all handlers
+loadCommands(client);
+loadEvents(client);
+loadButtons(client);
 
-client.player = player;
-global.client = client;
+// Connexion du bot
+client.login(process.env.TOKEN);
 
-// 🧁 Affiche le token dans Railway
-console.clear();
-console.log("✅ TOKEN chargé :", client.config.app.token ? "[TROUVÉ]" : "[MANQUANT]");
-
-// 💖 Charge tous les handlers
-require('./loader');
-
-// ✨ Connecte le bot
-client.login(client.config.app.token).catch((e) => {
-    if (e.message === 'An invalid token was provided.') {
-        console.error('\n❌ Token invalide ❌\n➡️ Vérifie `config.js` ou les variables Railway.');
-    } else {
-        console.error('❌ Erreur de connexion au bot ❌\n', e);
-    }
+// Garde le bot connecté au salon vocal (aucune déconnexion auto)
+player.events.on('playerStart', (queue, track) => {
+  console.log(`🎶 Lecture de : ${track.title}`);
 });
