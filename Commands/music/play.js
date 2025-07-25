@@ -1,13 +1,12 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { QueryType, QueueRepeatMode } = require('discord-player');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('play')
-    .setDescription('Joue une musique depuis YouTube')
+    .setDescription('Joue une musique depuis YouTube 🍭💖')
     .addStringOption(option =>
       option.setName('query')
-        .setDescription('Nom ou lien de la musique')
+        .setDescription('Nom ou lien de la musique à jouer 🎵')
         .setRequired(true)
     ),
 
@@ -15,52 +14,53 @@ module.exports = {
     const query = interaction.options.getString('query');
     const member = interaction.member;
 
-    // ❌ Si l'utilisateur n'est pas en vocal, on ne fait pas deferReply
+    // 🎀 Vérifie si l'utilisateur est dans un salon vocal
     if (!member.voice.channel) {
       return interaction.reply({
-        content: '🎧 Tu dois être dans un salon vocal pour écouter de la musique !',
-        ephemeral: true
+        content: "💔 Tu dois être dans un salon vocal pour écouter de la musique ! 💖",
+        ephemeral: true,
       });
     }
 
-    // ✅ Là on fait deferReply, car on va exécuter une suite
     await interaction.deferReply();
 
-    const queue = interaction.client.player.nodes.create(interaction.guild, {
+    const channel = member.voice.channel;
+    const client = interaction.client;
+
+    // 📻 Connexion et lecture
+    const queue = await client.player.nodes.create(interaction.guild, {
       metadata: interaction.channel,
       selfDeaf: true,
-      volume: 80,
       leaveOnEnd: false,
-      leaveOnEmpty: false,
+      leaveOnStop: false,
     });
 
     try {
-      if (!queue.connection)
-        await queue.connect(member.voice.channel);
-    } catch (err) {
-      console.error('Erreur connexion vocale :', err);
-      return interaction.editReply({ content: '❌ Impossible de rejoindre le salon vocal.' });
+      // 📡 Rejoindre le salon vocal
+      if (!queue.connection) await queue.connect(channel);
+
+      // 🔍 Recherche et lecture
+      const result = await client.player.search(query, {
+        requestedBy: interaction.user,
+      });
+
+      if (!result || !result.tracks.length) {
+        return interaction.editReply({
+          content: "😭 Aucun résultat trouvé... Essaie autre chose ! 🍡",
+        });
+      }
+
+      queue.addTrack(result.tracks[0]);
+      if (!queue.isPlaying()) await queue.node.play();
+
+      interaction.editReply({
+        content: `💿 **${result.tracks[0].title}** a été ajoutée à la file d'attente ! 💙🧁`,
+      });
+    } catch (error) {
+      console.error("❌ Erreur de lecture :", error);
+      interaction.editReply({
+        content: "❌ Une erreur est survenue lors de la lecture... 😢",
+      });
     }
-
-    const result = await interaction.client.player.search(query, {
-      requestedBy: interaction.user,
-      searchEngine: QueryType.AUTO,
-    });
-
-    if (!result || result.tracks.length === 0) {
-      return interaction.editReply({ content: '❌ Aucun résultat trouvé.' });
-    }
-
-    queue.addTrack(result.tracks[0]);
-
-    if (!queue.isPlaying()) {
-      await queue.node.play();
-    }
-
-    queue.setRepeatMode(QueueRepeatMode.AUTOPLAY);
-
-    await interaction.editReply({
-      content: `💖 Lecture de : **${result.tracks[0].title}** !`,
-    });
-  },
+  }
 };
