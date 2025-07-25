@@ -13,10 +13,12 @@ module.exports = {
 
     async execute(interaction) {
         const query = interaction.options.getString('query');
-        const member = interaction.member;
+
+        const member = await interaction.guild.members.fetch(interaction.user.id);
+        const voiceChannel = member.voice.channel;
 
         // Vérifie que l'utilisateur est dans un salon vocal
-        if (!member.voice.channel) {
+        if (!voiceChannel) {
             return interaction.reply({ content: '🔇 Tu dois être dans un salon vocal !', ephemeral: true });
         }
 
@@ -31,7 +33,7 @@ module.exports = {
         });
 
         try {
-            if (!queue.connection) await queue.connect(member.voice.channel);
+            if (!queue.connection) await queue.connect(voiceChannel);
         } catch (err) {
             return interaction.editReply({ content: '❌ Impossible de rejoindre le salon vocal.' });
         }
