@@ -1,6 +1,6 @@
 module.exports = {
     app: {
-        token: process.env.DISCORD_TOKEN, // ✅ Corrigé pour Railway
+        token: process.env.TOKEN, // ✅ Correspond à la variable définie dans Railway
         playing: 'i will never give up in you❤️',
         global: true,
         guild: "", // Optionnel : mets l’ID de ton serveur ici si tu veux restreindre les commandes
