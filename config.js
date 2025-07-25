@@ -5,13 +5,9 @@ module.exports = {
         token: process.env.TOKEN,
         clientId: process.env.CLIENT_ID,
         playing: 'i will never give up in you❤️',
-        global: false, // ❗️Désactivé pour enregistrer sur des serveurs spécifiques
-        guilds: [ // ✅ Liste de tes serveurs
-            "1398318999338750175",
-            "1397746309296820235",
-            "1276300982409494659",
-            "1259695245784911902"
-        ],
+        global: false, // ❗️Désactivé = commandes slash déployées sur le serveur de test seulement
+        guild: "1259695245784911902", // ✅ Remplacé "guilds" par "guild"
+
         extraMessages: false,
         loopMessage: false,
         lang: 'en',
