@@ -27,9 +27,12 @@ player.extractors.loadDefault().then(() => {
 console.clear();
 require('./loader');
 
+// 🔍 Vérifie si le token est bien récupéré depuis process.env
+console.log("✅ TOKEN chargé :", client.config.app.token ? "[TROUVÉ]" : "[MANQUANT]");
+
 client.login(client.config.app.token).catch(async (e) => {
     if (e.message === 'An invalid token was provided.') {
-        require('./process_tools').throwConfigError('app', 'token', '\n\t   ❌ Invalid Token Provided! ❌ \n\tChange the token in le fichier config.js\n');
+        require('./process_tools').throwConfigError('app', 'token', '\n\t   ❌ Invalid Token Provided! ❌ \n\tChange the token dans le fichier config.js ou vérifie la variable TOKEN sur Railway.\n');
     } else {
         console.error('❌ Error while logging in the bot ❌\n', e);
     }
