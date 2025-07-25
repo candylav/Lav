@@ -2,68 +2,60 @@ const { SlashCommandBuilder } = require('discord.js');
 const { QueryType, QueueRepeatMode } = require('discord-player');
 
 module.exports = {
-  data: new SlashCommandBuilder()
-    .setName('play')
-    .setDescription('Joue une musique depuis YouTube')
-    .addStringOption(option =>
-      option.setName('query')
-        .setDescription('Nom ou lien de la musique')
-        .setRequired(true)
-    ),
+    data: new SlashCommandBuilder()
+        .setName('play')
+        .setDescription('Joue une musique depuis YouTube')
+        .addStringOption(option =>
+            option.setName('query')
+                .setDescription('Nom ou lien de la musique')
+                .setRequired(true)
+        ),
 
-  async execute(interaction) {
-    const query = interaction.options.getString('query');
-    const member = interaction.member;
+    async execute(interaction) {
+        await interaction.deferReply(); // ✅ Obligatoire
 
-    if (!member.voice.channel) {
-      return interaction.reply({ content: '🔇 Tu dois être dans un salon vocal !', ephemeral: true });
-    }
+        const query = interaction.options.getString('query');
+        const member = interaction.member;
 
-    await interaction.deferReply();
-
-    const queue = interaction.client.player.nodes.create(interaction.guild, {
-      metadata: interaction.channel,
-      selfDeaf: true,
-      volume: 80,
-      leaveOnEnd: false,
-      leaveOnEmpty: false,
-    });
-
-    try {
-      console.log("▶ Tentative de connexion au salon vocal...");
-      if (!queue.connection) await queue.connect(member.voice.channel);
-      console.log("✅ Connexion réussie !");
-    } catch (err) {
-      console.error("❌ Erreur de connexion au salon :", err);
-      return interaction.editReply({ content: '❌ Impossible de rejoindre le salon vocal.' });
-    }
-
-    // Ensuite on fait la recherche
-    try {
-      const result = await interaction.client.player.search(query, {
-        requestedBy: interaction.user,
-        searchEngine: QueryType.AUTO,
-      });
-
-      if (!result || result.tracks.length === 0) {
-        return interaction.editReply({ content: '❌ Aucun résultat trouvé.' });
-      }
-
-      queue.addTrack(result.tracks[0]);
-
-      if (!queue.isPlaying()) {
-        await queue.node.play();
-
-        if (queue.tracks.size === 0) {
-          queue.setRepeatMode(QueueRepeatMode.AUTOPLAY);
+        if (!member.voice.channel) {
+            return interaction.editReply({
+                content: '🔇 Tu dois être dans un salon vocal !'
+            });
         }
-      }
 
-      return interaction.editReply(`🎵 Lecture de : **${result.tracks[0].title}**`);
+        const queue = interaction.client.player.nodes.create(interaction.guild, {
+            metadata: interaction.channel,
+            selfDeaf: true,
+            volume: 80,
+            leaveOnEnd: false,
+            leaveOnEmpty: false,
+        });
 
-    } catch (err) {
-      console.error("❌ Erreur pendant la lecture :", err);
-      return interaction.editReply({ content: '❌ Une erreur est survenue pendant la lecture.' });
-    }
-  },
+        try {
+            if (!queue.connection) await queue.connect(member.voice.channel);
+        } catch (err) {
+            return interaction.editReply({ content: '❌ Impossible de rejoindre le salon vocal.' });
+        }
+
+        const result = await interaction.client.player.search(query, {
+            requestedBy: interaction.user,
+            searchEngine: QueryType.AUTO,
+        });
+
+        if (!result || result.tracks.length === 0) {
+            return interaction.editReply({ content: '❌ Aucun résultat trouvé.' });
+        }
+
+        queue.addTrack(result.tracks[0]);
+
+        // ✅ Lancer la lecture (même si déjà en cours, discord-player gère)
+        if (!queue.isPlaying()) {
+            await queue.node.play();
+        }
+
+        // ✅ Auto-loop si file vide après cette musique
+        queue.setRepeatMode(QueueRepeatMode.AUTOPLAY);
+
+        return interaction.editReply(`🎵 Lecture de : **${result.tracks[0].title}**`);
+    },
 };
