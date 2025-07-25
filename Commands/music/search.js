@@ -53,3 +53,39 @@ module.exports = {
             errors: ['time'],
             filter: m => m.author.id === interaction.member.id
         });
+
+        collector.on('collect', async (msg) => {
+            collector.stop();
+
+            if (msg.content.toLowerCase() === 'cancel') {
+                return interaction.followUp({ content: await Translate(`Search cancelled <✅>`), ephemeral: true });
+            }
+
+            const choice = parseInt(msg.content);
+            if (!choice || choice <= 0 || choice > maxTracks.length) {
+                return interaction.followUp({
+                    content: await Translate(`Invalid response, try a value between <**1**> and <**${maxTracks.length}**> or <**cancel**>... try again ? <❌>`),
+                    ephemeral: true
+                });
+            }
+
+            try {
+                if (!queue.connection) await queue.connect(interaction.member.voice.channel);
+            } catch {
+                await player.deleteQueue(interaction.guildId);
+                return interaction.followUp({ content: await Translate(`I can't join the voice channel <${interaction.member}>... try again ? <❌>`), ephemeral: true });
+            }
+
+            await interaction.followUp({ content: await Translate(`Loading your search... <🎧>`), ephemeral: true });
+            queue.addTrack(res.tracks[choice - 1]);
+
+            if (!queue.isPlaying()) await queue.node.play();
+        });
+
+        collector.on('end', async (collected, reason) => {
+            if (reason === 'time') {
+                return interaction.followUp({ content: await Translate(`Search timed out <${interaction.member}>... try again ? <❌>`), ephemeral: true });
+            }
+        });
+    }
+};
