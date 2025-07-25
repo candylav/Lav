@@ -1,10 +1,8 @@
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const { Player } = require('discord-player');
-const { loadCommands } = require('./handlers/slash_handler');
 const { loadEvents } = require('./handlers/event_handler');
 const { loadButtons } = require('./handlers/button_handler');
 const { YouTubeExtractor } = require('@discord-player/extractor');
-const { resolve } = require('path');
 require('dotenv').config();
 
 const client = new Client({
@@ -28,7 +26,7 @@ const player = new Player(client, {
 player.extractors.register(YouTubeExtractor);
 
 // Load all handlers
-loadCommands(client);
+require('./handlers/slash_handler')(client); // ✅ correction ici
 loadEvents(client);
 loadButtons(client);
 
