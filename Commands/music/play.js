@@ -7,7 +7,7 @@ module.exports = {
     .setDescription('Joue une musique depuis YouTube 🍭💖')
     .addStringOption(option =>
       option.setName('query')
-        .setDescription('Nom ou lien de la musique 🎵')
+        .setDescription('Nom ou lien de la musique 🎶')
         .setRequired(true)
     ),
 
@@ -16,13 +16,14 @@ module.exports = {
     const member = interaction.member;
 
     if (!member.voice.channel) {
-      return interaction.reply({
+      await interaction.reply({
         content: '💔 Tu dois être dans un salon vocal pour écouter de la musique ! 💜',
         ephemeral: true
       });
+      return; // ⛔️ ESSENTIEL pour éviter le double reply
     }
 
-    await interaction.deferReply();
+    await interaction.deferReply(); // ⏳ On ne le fait QUE si on n’a pas déjà répondu
 
     const queue = interaction.client.player.nodes.create(interaction.guild, {
       metadata: interaction.channel,
@@ -58,7 +59,7 @@ module.exports = {
     queue.setRepeatMode(QueueRepeatMode.AUTOPLAY);
 
     await interaction.editReply({
-      content: `🍡 Lecture de : **${result.tracks[0].title}** 💖💙💜\n💿 Bonbon musical ajouté avec succès ! 🧁`
+      content: `🍡 Lecture de : **${result.tracks[0].title}** 💖💙💜\n🧁 Bonbon musical ajouté avec succès !`
     });
   },
 };
