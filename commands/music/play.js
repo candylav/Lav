@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { QueryType } = require('discord-player');
+const { QueryType, QueueRepeatMode } = require('discord-player');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -15,9 +15,12 @@ module.exports = {
         const query = interaction.options.getString('query');
         const member = interaction.member;
 
+        // Vérifie que l'utilisateur est dans un salon vocal
         if (!member.voice.channel) {
             return interaction.reply({ content: '🔇 Tu dois être dans un salon vocal !', ephemeral: true });
         }
+
+        await interaction.deferReply();
 
         const queue = interaction.client.player.nodes.create(interaction.guild, {
             metadata: interaction.channel,
@@ -27,12 +30,15 @@ module.exports = {
             leaveOnEmpty: false,
         });
 
-        await queue.connect(member.voice.channel);
-        await interaction.deferReply();
+        try {
+            if (!queue.connection) await queue.connect(member.voice.channel);
+        } catch (err) {
+            return interaction.editReply({ content: '❌ Impossible de rejoindre le salon vocal.' });
+        }
 
         const result = await interaction.client.player.search(query, {
             requestedBy: interaction.user,
-            searchEngine: QueryType.AUTO
+            searchEngine: QueryType.AUTO,
         });
 
         if (!result || result.tracks.length === 0) {
@@ -40,7 +46,15 @@ module.exports = {
         }
 
         queue.addTrack(result.tracks[0]);
-        if (!queue.isPlaying()) await queue.node.play();
+
+        if (!queue.isPlaying()) {
+            await queue.node.play();
+
+            // Auto-loop si seule musique
+            if (queue.tracks.size === 0) {
+                queue.setRepeatMode(QueueRepeatMode.AUTOPLAY);
+            }
+        }
 
         return interaction.editReply(`🎵 Lecture de : **${result.tracks[0].title}**`);
     },
