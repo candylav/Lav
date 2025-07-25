@@ -1,15 +1,21 @@
-const { EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { useQueue } = require('discord-player');
 const { Translate } = require('../../process_tools');
 
 module.exports = {
-    name: 'stop',
-    description:('Stop the track'),
+    data: new SlashCommandBuilder()
+        .setName('stop')
+        .setDescription('Stop the music and clear the queue'),
+
     voiceChannel: true,
 
-    async execute({ inter }) {
-        const queue = useQueue(inter.guild);
-        if (!queue?.isPlaying()) return inter.editReply({ content: await Translate(`No music currently playing <${inter.member}>... try again ? <❌>`) });
+    async execute(interaction) {
+        await interaction.deferReply();
+        const queue = useQueue(interaction.guild);
+
+        if (!queue?.isPlaying()) {
+            return interaction.editReply({ content: await Translate(`No music currently playing <${interaction.member}>... try again ? <❌>`) });
+        }
 
         queue.delete();
 
@@ -17,6 +23,6 @@ module.exports = {
             .setColor('#2f3136')
             .setAuthor({ name: await Translate(`Music stopped into this server, see you next time <✅>`) });
 
-        return inter.editReply({ embeds: [embed] });
+        return interaction.editReply({ embeds: [embed] });
     }
-}
+};

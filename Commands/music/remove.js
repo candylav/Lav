@@ -1,55 +1,59 @@
-const { ApplicationCommandOptionType, EmbedBuilder } = require('discord.js');
-const { useMainPlayer, useQueue } = require('discord-player');
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { useQueue } = require('discord-player');
 const { Translate } = require('../../process_tools');
 
 module.exports = {
-    name: 'remove',
-    description: "remove a song from the queue",
+    data: new SlashCommandBuilder()
+        .setName('remove')
+        .setDescription('Remove a song from the queue')
+        .addStringOption(option =>
+            option.setName('song')
+                .setDescription('The name or URL of the track you want to remove')
+                .setRequired(false))
+        .addNumberOption(option =>
+            option.setName('number')
+                .setDescription('The position in the queue')
+                .setRequired(false)),
+
     voiceChannel: true,
-    options: [
-        {
-            name: 'song',
-            description:('the name/url of the track you want to remove'),
-            type: ApplicationCommandOptionType.String,
-            required: false,
-        },
-        {
-            name: 'number',
-            description:('the place in the queue the song is in'),
-            type: ApplicationCommandOptionType.Number,
-            required: false,
+
+    async execute(interaction) {
+        await interaction.deferReply();
+        const queue = useQueue(interaction.guild);
+        if (!queue?.isPlaying()) {
+            return interaction.editReply({ content: await Translate(`No music currently playing <${interaction.member}>... try again ? <❌>`) });
         }
-    ],
 
-    async execute({ inter }) {
-        const queue = useQueue(inter.guild);
-        if (!queue?.isPlaying()) return inter.editReply({ content: await Translate(`No music currently playing <${inter.member}>... try again ? <❌>`) });
+        const number = interaction.options.getNumber('number');
+        const track = interaction.options.getString('song');
 
-        const number = inter.options.getNumber('number');
-        const track = inter.options.getString('song');
-        if (!track && !number) inter.editReply({ content: await Translate(`You have to use one of the options to remove a song <${inter.member}>... try again ? <❌>`) });
+        if (!track && !number) {
+            return interaction.editReply({ content: await Translate(`You must provide a track name or queue number <${interaction.member}>... try again ? <❌>`) });
+        }
 
         let trackName;
 
         if (track) {
-            const toRemove = queue.tracks.toArray().find((t) => t.title === track || t.url === track);
-            if (!toRemove) return inter.editReply({ content: await Translate(`could not find <${track}> <${inter.member}>... try using the url or the full name of the song ? <❌>`) });
-
+            const toRemove = queue.tracks.toArray().find(t => t.title === track || t.url === track);
+            if (!toRemove) {
+                return interaction.editReply({ content: await Translate(`Could not find <${track}> <${interaction.member}>... try using the URL or full title? <❌>`) });
+            }
+            trackName = toRemove.title;
             queue.removeTrack(toRemove);
-        } else if (number) {
+        } else {
             const index = number - 1;
-            const name = queue.tracks.toArray()[index].title;
-            if (!name) return inter.editReply({ content: await Translate(`This track does not seem to exist <${inter.member}>...  try again ? <❌>`) });
-
+            const target = queue.tracks.toArray()[index];
+            if (!target) {
+                return interaction.editReply({ content: await Translate(`This track does not seem to exist <${interaction.member}>... try again ? <❌>`) });
+            }
+            trackName = target.title;
             queue.removeTrack(index);
-
-            trackName = name;
         }
-        
+
         const embed = new EmbedBuilder()
             .setColor('#2f3136')
             .setAuthor({ name: await Translate(`Removed <${trackName}> from the queue <✅>`) });
 
-        return inter.editReply({ embeds: [embed] });
+        return interaction.editReply({ embeds: [embed] });
     }
-}
+};

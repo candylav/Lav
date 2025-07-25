@@ -1,23 +1,34 @@
-const { EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { useQueue } = require('discord-player');
 const { Translate } = require('../../process_tools');
 
 module.exports = {
-    name: 'pause',
-    description:('Pause the track'),
+    data: new SlashCommandBuilder()
+        .setName('pause')
+        .setDescription('Pause the track'),
+
     voiceChannel: true,
 
-    async execute({ inter }) {
-        const queue = useQueue(inter.guild);
-        if (!queue?.isPlaying()) return inter.editReply({ content: await Translate(`No music currently playing <${inter.member}>... try again ? <❌>`) });
+    async execute(interaction) {
+        await interaction.deferReply();
+        const queue = useQueue(interaction.guild);
 
-        if (queue.node.isPaused()) return inter.editReply({ content: await Translate(`The track is currently paused, <${inter.member}>... try again ? <❌>`) });
+        if (!queue?.isPlaying()) {
+            return interaction.editReply({ content: await Translate(`No music currently playing <${interaction.member}>... try again ? <❌>`) });
+        }
+
+        if (queue.node.isPaused()) {
+            return interaction.editReply({ content: await Translate(`The track is already paused, <${interaction.member}>... try again ? <❌>`) });
+        }
 
         const success = queue.node.setPaused(true);
-        const pauseEmbed = new EmbedBuilder()
-            .setAuthor({ name: success ? await Translate(`Current music <${queue.currentTrack.title}> paused <✅>`) : await Translate(`Something went wrong <${inter.member}>... try again ? <❌>`) })
-            .setColor('#2f3136')
 
-        return inter.editReply({ embeds: [pauseEmbed] });
+        const pauseEmbed = new EmbedBuilder()
+            .setAuthor({ name: success
+                ? await Translate(`Current music <${queue.currentTrack.title}> paused <✅>`)
+                : await Translate(`Something went wrong <${interaction.member}>... try again ? <❌>`) })
+            .setColor('#2f3136');
+
+        return interaction.editReply({ embeds: [pauseEmbed] });
     }
-}
+};

@@ -12,16 +12,17 @@ module.exports = {
         ),
 
     async execute(interaction) {
-        await interaction.deferReply(); // ✅ Obligatoire
-
         const query = interaction.options.getString('query');
         const member = interaction.member;
 
         if (!member.voice.channel) {
-            return interaction.editReply({
-                content: '🔇 Tu dois être dans un salon vocal !'
+            return interaction.reply({
+                content: '🔇 Tu dois être dans un salon vocal !',
+                flags: 64 // Rend le message éphémère
             });
         }
+
+        await interaction.deferReply(); // ✅ On diffère seulement si on n’a pas répondu
 
         const queue = interaction.client.player.nodes.create(interaction.guild, {
             metadata: interaction.channel,
@@ -48,12 +49,10 @@ module.exports = {
 
         queue.addTrack(result.tracks[0]);
 
-        // ✅ Lancer la lecture (même si déjà en cours, discord-player gère)
         if (!queue.isPlaying()) {
             await queue.node.play();
         }
 
-        // ✅ Auto-loop si file vide après cette musique
         queue.setRepeatMode(QueueRepeatMode.AUTOPLAY);
 
         return interaction.editReply(`🎵 Lecture de : **${result.tracks[0].title}**`);

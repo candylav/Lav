@@ -1,57 +1,60 @@
-const { ApplicationCommandOptionType, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { useQueue } = require('discord-player');
 const { Translate } = require('../../process_tools');
 
 module.exports = {
-    name: 'skipto',
-    description:("Skips to particular track in queue"),
+    data: new SlashCommandBuilder()
+        .setName('skipto')
+        .setDescription('Skips to a specific track in the queue')
+        .addStringOption(option =>
+            option.setName('song')
+                .setDescription('The name or URL of the track you want to skip to')
+                .setRequired(false))
+        .addNumberOption(option =>
+            option.setName('number')
+                .setDescription('The position of the song in the queue')
+                .setRequired(false)),
+
     voiceChannel: true,
-    options: [
-        {
-            name: 'song',
-            description:('The name/url of the track you want to skip to'),
-            type: ApplicationCommandOptionType.String,
-            required: false,
-        },
-        {
-            name: 'number',
-            description:('The place in the queue the song is in'),
-            type: ApplicationCommandOptionType.Number,
-            required: false,
+
+    async execute(interaction) {
+        await interaction.deferReply();
+        const queue = useQueue(interaction.guild);
+
+        if (!queue?.isPlaying()) {
+            return interaction.editReply({ content: await Translate(`No music currently playing <${interaction.member}>... try again ? <❌>`) });
         }
-    ],
 
-    async execute({ inter }) {
-        const queue = useQueue(inter.guild);
-        if (!queue?.isPlaying()) return inter.editReply({ content: await Translate(`No music currently playing <${inter.member}>... try again ? <❌>`) });
+        const track = interaction.options.getString('song');
+        const number = interaction.options.getNumber('number');
 
-        const track = inter.options.getString('song');
-        const number = inter.options.getNumber('number')
-        if (!track && !number) return inter.editReply({ content: await Translate(`You have to use one of the options to jump to a song <${inter.member}>... try again ? <❌>`) });
+        if (!track && !number) {
+            return interaction.editReply({ content: await Translate(`You have to use one of the options to jump to a song <${interaction.member}>... try again ? <❌>`) });
+        }
 
         let trackName;
 
         if (track) {
-            const skipTo = queue.tracks.toArray().find((t) => t.title.toLowerCase() === track.toLowerCase() || t.url === track)
-            if (!skipTo) return inter.editReply({ content: await Translate(`Could not find <${track}> <${inter.member}>... try using the url or the full name of the song ? <❌>`) });
-
+            const skipTo = queue.tracks.toArray().find(t => t.title.toLowerCase() === track.toLowerCase() || t.url === track);
+            if (!skipTo) {
+                return interaction.editReply({ content: await Translate(`Could not find <${track}> <${interaction.member}>... try using the URL or full name of the song ? <❌>`) });
+            }
             trackName = skipTo.title;
-
             queue.node.skipTo(skipTo);
-        } else if (number) {
+        } else {
             const index = number - 1;
-            const name = queue.tracks.toArray()[index].title;
-            if (!name) return inter.editReply({ content: await Translate(`This track does not seem to exist <${inter.member}>... try again ? <❌>`) });
-
-            trackName = name;
-
+            const target = queue.tracks.toArray()[index];
+            if (!target) {
+                return interaction.editReply({ content: await Translate(`This track does not seem to exist <${interaction.member}>... try again ? <❌>`) });
+            }
+            trackName = target.title;
             queue.node.skipTo(index);
         }
 
         const embed = new EmbedBuilder()
             .setAuthor({ name: await Translate(`Skipped to <${trackName}> <✅>`) })
-            .setColor('#2f3136')
+            .setColor('#2f3136');
 
-        inter.editReply({ embeds: [embed] });
+        return interaction.editReply({ embeds: [embed] });
     }
-}
+};
