@@ -2,49 +2,48 @@ require('dotenv').config();
 
 const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
 const { Player } = require('discord-player');
-const { YouTubeExtractor } = require('@discord-player/youtubei');
+const { useMainPlayer, YouTubeExtractor } = require('@discord-player/extractor');
 
-// 💖 Crée le client Discord
+// Crée le client
 const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.GuildVoiceStates,
-        GatewayIntentBits.MessageContent,
-    ],
-    partials: [Partials.Channel]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.GuildVoiceStates,
+    GatewayIntentBits.MessageContent,
+  ],
+  partials: [Partials.Channel],
 });
 
-// 📦 Charge la config
+// Charge la config
 client.config = require('./config');
-
-// 🍡 Prépare la collection de commandes
 client.commands = new Collection();
 
-// 🎧 Initialise le lecteur audio
+// Initialise le lecteur
 const player = new Player(client, client.config.opt.discordPlayer);
-
-// 🧁 Charge et connecte l’extracteur YouTube officiel
-player.extractors.register(YouTubeExtractor, {});
-console.log("🩷 Extracteur `youtubei` chargé avec succès !");
-
-// 🎀 Attache player et client globalement
 client.player = player;
 global.client = client;
 
-// 🌈 Affichage du token pour debug Railway
+// Enregistre l’extracteur YouTube
+(async () => {
+  await player.extractors.loadDefault(); // Chargement de base
+  await player.extractors.register(YouTubeExtractor); // Enregistrement stable de YouTube
+  console.log("🍡 Extracteur YouTube enregistré avec @discord-player/extractor !");
+})();
+
+// Log
 console.clear();
 console.log("✅ TOKEN chargé :", client.config.app.token ? "[TROUVÉ]" : "[MANQUANT]");
 
-// 🍬 Charge tous les handlers
+// Charge les handlers
 require('./loader');
 
-// 🚀 Connexion du bot à Discord
-client.login(client.config.app.token).catch(async (e) => {
-    if (e.message === 'An invalid token was provided.') {
-        console.error('\n❌ Token invalide ❌\n➡️ Vérifie `config.js` ou tes variables Railway.');
-    } else {
-        console.error('❌ Erreur de connexion au bot ❌\n', e);
-    }
+// Connexion
+client.login(client.config.app.token).catch((e) => {
+  if (e.message === 'An invalid token was provided.') {
+    console.error('\n❌ Token invalide ❌\n➡️ Vérifie `config.js` ou Railway.');
+  } else {
+    console.error('❌ Erreur de connexion au bot ❌\n', e);
+  }
 });
