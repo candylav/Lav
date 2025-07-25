@@ -3,18 +3,12 @@ const fs = require('fs');
 require('dotenv').config();
 
 const commands = [];
-const foldersPath = './commands';
-const commandFolders = fs.readdirSync(foldersPath);
+const commandFiles = fs.readdirSync('./Commands').filter(file => file.endsWith('.js'));
 
-for (const folder of commandFolders) {
-    const commandsPath = `${foldersPath}/${folder}`;
-    const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-
-    for (const file of commandFiles) {
-        const command = require(`${commandsPath}/${file}`);
-        if (command.data) {
-            commands.push(command.data.toJSON());
-        }
+for (const file of commandFiles) {
+    const command = require(`./Commands/${file}`);
+    if (command.data) {
+        commands.push(command.data.toJSON());
     }
 }
 
