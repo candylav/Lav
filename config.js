@@ -1,9 +1,9 @@
 module.exports = {
     app: {
-        token: process.env.TOKEN, // ✅ Utilise la variable d'environnement .env
+        token: process.env.DISCORD_TOKEN, // ✅ Corrigé pour Railway
         playing: 'i will never give up in you❤️',
-        global: true,             // ✅ ne pas mettre entre guillemets
-        guild: "",                // Optionnel : mets l’ID de ton serveur ici si tu veux lier localement
+        global: true,
+        guild: "", // Optionnel : mets l’ID de ton serveur ici si tu veux restreindre les commandes
         extraMessages: false,
         loopMessage: false,
         lang: 'en',
@@ -30,9 +30,9 @@ module.exports = {
         maxVol: 100,
         spotifyBridge: true,
         volume: 75,
-        leaveOnEmpty: false,               // ✅ Le bot reste dans le salon même s’il est seul
+        leaveOnEmpty: false, // Le bot reste même seul
         leaveOnEmptyCooldown: 30000,
-        leaveOnEnd: false,                 // ✅ Le bot reste après la fin d’une musique
+        leaveOnEnd: false,   // Le bot reste après la fin de la musique
         leaveOnEndCooldown: 30000,
         discordPlayer: {
             ytdlOptions: {
