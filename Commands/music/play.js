@@ -22,44 +22,50 @@ module.exports = {
       });
     }
 
-    await interaction.deferReply();
-
-    const channel = member.voice.channel;
     const client = interaction.client;
+    const channel = member.voice.channel;
 
-    // 📻 Connexion et lecture
-    const queue = await client.player.nodes.create(interaction.guild, {
-      metadata: interaction.channel,
+    // 📻 Crée ou récupère la file d'attente
+    const queue = client.player.nodes.create(interaction.guild, {
+      metadata: {
+        channel: interaction.channel,
+        client: interaction.client,
+        requestedBy: interaction.user,
+      },
       selfDeaf: true,
       leaveOnEnd: false,
       leaveOnStop: false,
     });
 
     try {
-      // 📡 Rejoindre le salon vocal
+      // 📡 Rejoindre le salon vocal si pas encore connecté
       if (!queue.connection) await queue.connect(channel);
 
-      // 🔍 Recherche et lecture
+      // 🔍 Recherche de la musique
       const result = await client.player.search(query, {
         requestedBy: interaction.user,
       });
 
       if (!result || !result.tracks.length) {
-        return interaction.editReply({
+        return interaction.reply({
           content: "😭 Aucun résultat trouvé... Essaie autre chose ! 🍡",
+          ephemeral: true,
         });
       }
 
+      // 🎶 Lecture
       queue.addTrack(result.tracks[0]);
       if (!queue.isPlaying()) await queue.node.play();
 
-      interaction.editReply({
-        content: `💿 **${result.tracks[0].title}** a été ajoutée à la file d'attente ! 💙🧁`,
+      return interaction.reply({
+        content: `💿 **${result.tracks[0].title}** a été ajoutée à la file d'attente ! 💙🍭💖`,
       });
+
     } catch (error) {
       console.error("❌ Erreur de lecture :", error);
-      interaction.editReply({
-        content: "❌ Une erreur est survenue lors de la lecture... 😢",
+      return interaction.reply({
+        content: "❌ Une erreur est survenue pendant la lecture... 😢",
+        ephemeral: true,
       });
     }
   }
