@@ -15,16 +15,17 @@ module.exports = {
     const member = interaction.member;
 
     if (!member.voice.channel) {
-      return interaction.reply({
+      await interaction.reply({
         content: "💔 Tu dois être dans un salon vocal pour écouter de la musique ! 💖",
         ephemeral: true,
       });
+      return;
     }
 
-    const channel = member.voice.channel;
     const client = interaction.client;
+    const channel = member.voice.channel;
 
-    await interaction.deferReply(); // ✅ On ne répond qu'une fois ensuite !
+    await interaction.deferReply(); // ✅ on retarde la réponse proprement
 
     const queue = await client.player.nodes.create(interaction.guild, {
       metadata: interaction.channel,
