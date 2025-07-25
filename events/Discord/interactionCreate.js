@@ -22,7 +22,11 @@ module.exports = async (client, inter) => {
             return await inter.editReply({ embeds: [errorEmbed], ephemeral: true });
         }
 
-        if (DJ.enabled && DJ.commands.includes(command) && !inter.member._roles.includes(inter.guild.roles.cache.find(x => x.name === DJ.roleName)?.id)) {
+        if (
+            DJ.enabled &&
+            DJ.commands.includes(command) &&
+            !inter.member._roles.includes(inter.guild.roles.cache.find(x => x.name === DJ.roleName)?.id)
+        ) {
             errorEmbed.setDescription(await Translate(`<❌> | This command is reserved for members with the role <\`${DJ.roleName}\`>`));
             return await inter.editReply({ embeds: [errorEmbed], ephemeral: true });
         }
@@ -33,18 +37,21 @@ module.exports = async (client, inter) => {
                 return await inter.editReply({ embeds: [errorEmbed], ephemeral: true });
             }
 
-            if (inter.guild.members.me.voice.channel && inter.member.voice.channel.id !== inter.guild.members.me.voice.channel.id) {
+            if (
+                inter.guild.members.me.voice.channel &&
+                inter.member.voice.channel.id !== inter.guild.members.me.voice.channel.id
+            ) {
                 errorEmbed.setDescription(await Translate(`<❌> | You are not in the same voice channel as me.`));
                 return await inter.editReply({ embeds: [errorEmbed], ephemeral: true });
             }
         }
 
-        // ✅ LA CORRECTION EST ICI
+        // ✅ Exécution avec gestion d’erreur
         try {
             await command.execute(inter);
         } catch (err) {
             console.error(err);
-            errorEmbed.setDescription('❌ Une erreur est survenue pendant l\'exécution de la commande.');
+            errorEmbed.setDescription(`❌ Une erreur est survenue pendant l’exécution de la commande.`);
             await inter.editReply({ embeds: [errorEmbed], ephemeral: true });
         }
     }
