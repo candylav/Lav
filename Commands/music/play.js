@@ -16,10 +16,11 @@ module.exports = {
     const member = interaction.member;
 
     if (!member.voice.channel) {
-      return interaction.reply({
+      await interaction.reply({
         content: '🔇 Tu dois être dans un salon vocal !',
         ephemeral: true,
       });
+      return;
     }
 
     await interaction.deferReply();
