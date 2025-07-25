@@ -4,10 +4,10 @@ const { QueryType, QueueRepeatMode } = require('discord-player');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('play')
-    .setDescription('Joue une musique depuis YouTube')
+    .setDescription('Joue une musique depuis YouTube 🍭💖')
     .addStringOption(option =>
       option.setName('query')
-        .setDescription('Nom ou lien de la musique')
+        .setDescription('Nom ou lien de la musique 🎵')
         .setRequired(true)
     ),
 
@@ -16,11 +16,10 @@ module.exports = {
     const member = interaction.member;
 
     if (!member.voice.channel) {
-      await interaction.reply({
-        content: '🔇 Tu dois être dans un salon vocal !',
-        ephemeral: true,
+      return interaction.reply({
+        content: '💔 Tu dois être dans un salon vocal pour écouter de la musique ! 💜',
+        ephemeral: true
       });
-      return;
     }
 
     await interaction.deferReply();
@@ -34,10 +33,11 @@ module.exports = {
     });
 
     try {
-      if (!queue.connection) await queue.connect(member.voice.channel);
+      if (!queue.connection)
+        await queue.connect(member.voice.channel);
     } catch (err) {
-      console.error('Erreur connexion vocal :', err);
-      return interaction.editReply({ content: '❌ Impossible de rejoindre le salon vocal.' });
+      console.error('❌ Erreur connexion vocal :', err);
+      return interaction.editReply({ content: '❌ Impossible de rejoindre le salon vocal. 😢' });
     }
 
     const result = await interaction.client.player.search(query, {
@@ -46,7 +46,7 @@ module.exports = {
     });
 
     if (!result || result.tracks.length === 0) {
-      return interaction.editReply({ content: '❌ Aucun résultat trouvé.' });
+      return interaction.editReply({ content: '❌ Aucun résultat trouvé. 💔' });
     }
 
     queue.addTrack(result.tracks[0]);
@@ -58,7 +58,7 @@ module.exports = {
     queue.setRepeatMode(QueueRepeatMode.AUTOPLAY);
 
     await interaction.editReply({
-      content: `🎶 Lecture de : **${result.tracks[0].title}**`,
+      content: `🍡 Lecture de : **${result.tracks[0].title}** 💖💙💜\n💿 Bonbon musical ajouté avec succès ! 🧁`
     });
   },
 };
